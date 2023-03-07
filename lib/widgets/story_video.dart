@@ -25,8 +25,10 @@ class VideoLoader {
       onComplete();
     }
 
-    final fileStream = DefaultCacheManager()
-        .getFileStream(this.url, headers: this.requestHeaders as Map<String, String>?);
+    final fileStream = DefaultCacheManager().getFileStream(
+      this.url,
+      headers: this.requestHeaders as Map<String, String>?,
+    );
 
     fileStream.listen((fileResponse) {
       if (fileResponse is FileInfo) {
@@ -44,24 +46,26 @@ class StoryVideo extends StatefulWidget {
   final StoryController? storyController;
   final VideoLoader videoLoader;
 
-  StoryVideo(this.videoLoader, {this.storyController, Key? key})
-      : super(key: key ?? UniqueKey());
+  StoryVideo(
+    this.videoLoader, {
+    Key? key,
+    this.storyController,
+  }) : super(key: key ?? UniqueKey());
 
-  static StoryVideo url(String url,
-      {StoryController? controller,
-      Map<String, dynamic>? requestHeaders,
-      Key? key}) {
-    return StoryVideo(
-      VideoLoader(url, requestHeaders: requestHeaders),
-      storyController: controller,
-      key: key,
-    );
-  }
+  static StoryVideo url(
+    String url, {
+    Key? key,
+    StoryController? controller,
+    Map<String, dynamic>? requestHeaders,
+  }) =>
+      StoryVideo(
+        VideoLoader(url, requestHeaders: requestHeaders),
+        storyController: controller,
+        key: key,
+      );
 
   @override
-  State<StatefulWidget> createState() {
-    return StoryVideoState();
-  }
+  State<StatefulWidget> createState() => StoryVideoState();
 }
 
 class StoryVideoState extends State<StoryVideo> {
@@ -79,8 +83,7 @@ class StoryVideoState extends State<StoryVideo> {
 
     widget.videoLoader.loadVideo(() {
       if (widget.videoLoader.state == LoadState.success) {
-        this.playerController =
-            VideoPlayerController.file(widget.videoLoader.videoFile!);
+        this.playerController = VideoPlayerController.file(widget.videoLoader.videoFile!);
 
         playerController!.initialize().then((v) {
           setState(() {});
@@ -88,8 +91,7 @@ class StoryVideoState extends State<StoryVideo> {
         });
 
         if (widget.storyController != null) {
-          _streamSubscription =
-              widget.storyController!.playbackNotifier.listen((playbackState) {
+          _streamSubscription = widget.storyController!.playbackNotifier.listen((playbackState) {
             if (playbackState == PlaybackState.pause) {
               playerController!.pause();
             } else {
@@ -104,8 +106,7 @@ class StoryVideoState extends State<StoryVideo> {
   }
 
   Widget getContentView() {
-    if (widget.videoLoader.state == LoadState.success &&
-        playerController!.value.isInitialized) {
+    if (widget.videoLoader.state == LoadState.success && playerController!.value.isInitialized) {
       return Center(
         child: AspectRatio(
           aspectRatio: playerController!.value.aspectRatio,
@@ -114,24 +115,26 @@ class StoryVideoState extends State<StoryVideo> {
       );
     }
 
-    return widget.videoLoader.state == LoadState.loading
-        ? Center(
-            child: Container(
-              width: 70,
-              height: 70,
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                strokeWidth: 3,
-              ),
-            ),
-          )
-        : Center(
-            child: Text(
-            "Media failed to load.",
-            style: TextStyle(
-              color: Colors.white,
-            ),
-          ));
+    if (widget.videoLoader.state == LoadState.loading) {
+      return Center(
+        child: Container(
+          width: 70,
+          height: 70,
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            strokeWidth: 3,
+          ),
+        ),
+      );
+    } else {
+      return Center(
+          child: Text(
+        "Media failed to load.",
+        style: TextStyle(
+          color: Colors.white,
+        ),
+      ));
+    }
   }
 
   @override

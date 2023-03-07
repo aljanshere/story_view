@@ -8,13 +8,7 @@ class VerticalDragInfo {
   Direction? direction;
 
   void update(double primaryDelta) {
-    Direction tmpDirection;
-
-    if (primaryDelta > 0) {
-      tmpDirection = Direction.down;
-    } else {
-      tmpDirection = Direction.up;
-    }
+    final tmpDirection = primaryDelta > 0 ? Direction.down : Direction.up;
 
     if (direction != null && tmpDirection != direction) {
       cancel = true;
