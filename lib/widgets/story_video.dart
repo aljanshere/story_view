@@ -20,21 +20,21 @@ class VideoLoader {
   VideoLoader(this.url, {this.requestHeaders});
 
   void loadVideo(VoidCallback onComplete) {
-    if (this.videoFile != null) {
-      this.state = LoadState.success;
+    if (videoFile != null) {
+      state = LoadState.success;
       onComplete();
     }
 
     final fileStream = DefaultCacheManager().getFileStream(
-      this.url,
-      headers: this.requestHeaders as Map<String, String>?,
+      url,
+      headers: requestHeaders as Map<String, String>?,
     );
 
     fileStream.listen((fileResponse) {
       if (fileResponse is FileInfo) {
-        if (this.videoFile == null) {
-          this.state = LoadState.success;
-          this.videoFile = fileResponse.file;
+        if (videoFile == null) {
+          state = LoadState.success;
+          videoFile = fileResponse.file;
           onComplete();
         }
       }
@@ -83,7 +83,8 @@ class StoryVideoState extends State<StoryVideo> {
 
     widget.videoLoader.loadVideo(() {
       if (widget.videoLoader.state == LoadState.success) {
-        this.playerController = VideoPlayerController.file(widget.videoLoader.videoFile!);
+        playerController =
+            VideoPlayerController.file(widget.videoLoader.videoFile!);
 
         playerController!.initialize().then((v) {
           if (mounted) {
@@ -93,7 +94,8 @@ class StoryVideoState extends State<StoryVideo> {
         });
 
         if (widget.storyController != null) {
-          _streamSubscription = widget.storyController!.playbackNotifier.listen((playbackState) {
+          _streamSubscription =
+              widget.storyController!.playbackNotifier.listen((playbackState) {
             if (playbackState == PlaybackState.pause) {
               playerController!.pause();
             } else {
@@ -108,7 +110,8 @@ class StoryVideoState extends State<StoryVideo> {
   }
 
   Widget getContentView() {
-    if (widget.videoLoader.state == LoadState.success && playerController!.value.isInitialized) {
+    if (widget.videoLoader.state == LoadState.success &&
+        playerController!.value.isInitialized) {
       return Center(
         child: AspectRatio(
           aspectRatio: playerController!.value.aspectRatio,
@@ -118,8 +121,8 @@ class StoryVideoState extends State<StoryVideo> {
     }
 
     if (widget.videoLoader.state == LoadState.loading) {
-      return Center(
-        child: Container(
+      return const Center(
+        child: SizedBox(
           width: 70,
           height: 70,
           child: CircularProgressIndicator(
@@ -129,7 +132,7 @@ class StoryVideoState extends State<StoryVideo> {
         ),
       );
     } else {
-      return Center(
+      return const Center(
           child: Text(
         "Media failed to load.",
         style: TextStyle(

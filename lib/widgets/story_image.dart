@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 import '../utils.dart';
@@ -23,38 +24,49 @@ class ImageLoader {
   /// Load image from disk cache first, if not found then load from network.
   /// `onComplete` is called when [imageBytes] become available.
   void loadImage(VoidCallback onComplete) {
-    if (this.frames != null) {
-      this.state = LoadState.success;
+    if (frames != null) {
+      state = LoadState.success;
       onComplete();
     }
 
-    final fileStream = DefaultCacheManager().getFileStream(this.url, headers: this.requestHeaders as Map<String, String>?);
+    final fileStream = DefaultCacheManager()
+        .getFileStream(url, headers: requestHeaders as Map<String, String>?);
 
     fileStream.listen(
       (fileResponse) {
-        if (!(fileResponse is FileInfo)) return;
+        if (fileResponse is! FileInfo) return;
         // the reason for this is that, when the cache manager fetches
         // the image again from network, the provided `onComplete` should
         // not be called again
-        if (this.frames != null) {
+        if (frames != null) {
           return;
         }
 
         final imageBytes = fileResponse.file.readAsBytesSync();
 
-        this.state = LoadState.success;
+        state = LoadState.success;
 
-        // ignore: deprecated_member_use
-        PaintingBinding.instance.instantiateImageCodec(imageBytes).then((codec) {
-          this.frames = codec;
-          onComplete();
-        }, onError: (error) {
-          this.state = LoadState.failure;
-          onComplete();
-        });
+        ImmutableBuffer.fromUint8List(imageBytes).then(
+          (buffer) {
+            PaintingBinding.instance.instantiateImageCodecWithSize(buffer).then(
+              (value) {
+                frames = value;
+                onComplete();
+              },
+              onError: (error) {
+                state = LoadState.failure;
+                onComplete();
+              },
+            );
+          },
+          onError: (error) {
+            state = LoadState.failure;
+            onComplete();
+          },
+        );
       },
       onError: (error) {
-        this.state = LoadState.failure;
+        state = LoadState.failure;
         onComplete();
       },
     );
@@ -109,14 +121,15 @@ class StoryImageState extends State<StoryImage> {
     super.initState();
 
     if (widget.controller != null) {
-      this._streamSubscription = widget.controller!.playbackNotifier.listen((playbackState) {
+      _streamSubscription =
+          widget.controller!.playbackNotifier.listen((playbackState) {
         // for the case of gifs we need to pause/play
         if (widget.imageLoader.frames == null) {
           return;
         }
 
         if (playbackState == PlaybackState.pause) {
-          this._timer?.cancel();
+          _timer?.cancel();
         } else {
           forward();
         }
@@ -154,18 +167,20 @@ class StoryImageState extends State<StoryImage> {
   }
 
   void forward() async {
-    this._timer?.cancel();
+    _timer?.cancel();
 
-    if (widget.controller != null && widget.controller!.playbackNotifier.stream.value == PlaybackState.pause) {
+    if (widget.controller != null &&
+        widget.controller!.playbackNotifier.stream.value ==
+            PlaybackState.pause) {
       return;
     }
 
     final nextFrame = await widget.imageLoader.frames!.getNextFrame();
 
-    this.currentFrame = nextFrame.image;
+    currentFrame = nextFrame.image;
 
-    if (nextFrame.duration > Duration(milliseconds: 0)) {
-      this._timer = Timer(nextFrame.duration, forward);
+    if (nextFrame.duration > const Duration(milliseconds: 0)) {
+      _timer = Timer(nextFrame.duration, forward);
     }
 
     setState(() {});
@@ -175,11 +190,11 @@ class StoryImageState extends State<StoryImage> {
     switch (widget.imageLoader.state) {
       case LoadState.success:
         return RawImage(
-          image: this.currentFrame,
+          image: currentFrame,
           fit: widget.fit,
         );
       case LoadState.failure:
-        return Center(
+        return const Center(
           child: Text(
             "Image failed to load.",
             style: TextStyle(
@@ -188,8 +203,8 @@ class StoryImageState extends State<StoryImage> {
           ),
         );
       default:
-        return Center(
-          child: Container(
+        return const Center(
+          child: SizedBox(
             width: 70,
             height: 70,
             child: CircularProgressIndicator(
@@ -203,7 +218,7 @@ class StoryImageState extends State<StoryImage> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       height: double.infinity,
       child: getContentView(),
